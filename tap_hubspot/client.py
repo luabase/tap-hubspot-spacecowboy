@@ -278,13 +278,6 @@ class HubSpotStream(RESTStream):
         # Need to copy the replication key to top level so that meltano can read it
         if self.replication_key:
             row[self.replication_key] = self.get_replication_key_value(row)
-        # Convert properties and associations back into JSON
-        if "properties" in row:
-            jsonprops = json.dumps(row.get("properties"))
-            row["properties"] = jsonprops
-        if "associations" in row:
-            jsonassoc = json.dumps(row.get("associations"))
-            row["associations"] = jsonassoc
         return row
 
     def get_replication_key_value(self, row: dict) -> Optional[datetime]:
