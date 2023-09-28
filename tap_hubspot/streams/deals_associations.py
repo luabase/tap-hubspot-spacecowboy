@@ -34,10 +34,10 @@ class DealsAssociationsStream(HubSpotStream):
         ),
         th.Property(
             "associations",
-            th.StringType,
+            th.ObjectType(),
         ),
         th.Property(
             "associations",
-            th.StringType,
+            th.ObjectType(),
         ),
     ).to_dict()

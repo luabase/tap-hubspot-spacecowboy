@@ -23,7 +23,7 @@ class ContactsStream(HubSpotStream):
             ),
             th.Property(
                 "properties",
-                th.StringType,
+                th.ObjectType(),
             ),
             th.Property(
                 "createdAt",
@@ -43,7 +43,7 @@ class ContactsStream(HubSpotStream):
             ),
             th.Property(
                 "associations",
-                th.StringType,
+                th.ObjectType(),
             ),
         )
 
