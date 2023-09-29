@@ -76,3 +76,9 @@ class CompaniesStream(HubSpotStream):
     def path(self, _):
         "Just to shut Lint up"
         pass
+
+    def get_child_context(self, record: dict, context: Optional[dict]) -> dict:
+        """Return a context dictionary for child streams."""
+        return {
+            "id": record["id"],
+        }

@@ -1,10 +1,13 @@
 from singer_sdk import typing as th  # JSON Schema typing helpers
 
 from tap_hubspot.client import HubSpotStream
+from tap_hubspot.streams.tasks import TasksStream
 
 
 class TaskAssociationsStream(HubSpotStream):
     """Task's associations."""
+    parent_stream_type = TasksStream
+    records_jsonpath = "$[*]"
 
     def get_properties(self):
         return []
@@ -13,7 +16,7 @@ class TaskAssociationsStream(HubSpotStream):
 
     name = "task_associations"
     path = (
-        "/crm/v4/objects/task/?associations=contacts"
+        "/crm/v4/objects/task/{id}/?associations=contacts"
         "&propertiesWithHistory=hubspot_owner_id"
     )
     properties_object_type = "task"
