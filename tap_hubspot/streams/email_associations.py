@@ -6,8 +6,8 @@ from tap_hubspot.streams.emails import EmailsStream
 
 class EmailAssociationsStream(HubSpotStream):
     """Email's associations."""
-    parent_stream_type = EmailsStream
-    records_jsonpath = "$[*]"
+    # parent_stream_type = EmailsStream
+    # records_jsonpath = "$[*]"
 
     def get_properties(self):
         return []
@@ -16,7 +16,8 @@ class EmailAssociationsStream(HubSpotStream):
 
     name = "email_associations"
     path = (
-        "/crm/v4/objects/email/{id}/?associations=contacts"
+        # "/crm/v4/objects/email/{id}/?associations=contacts"
+        "/crm/v4/objects/email/?associations=contacts"
         "&propertiesWithHistory=hubspot_owner_id"
     )
     properties_object_type = "emails"

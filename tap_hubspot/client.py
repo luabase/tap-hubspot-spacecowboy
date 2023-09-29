@@ -75,7 +75,8 @@ class HubSpotStream(RESTStream):
             `True` if stream is sorted. Defaults to `False`.
         """
         yes_search = not self.config.get("no_search", False)
-        return yes_search and self.replication_method == REPLICATION_INCREMENTAL
+        # return yes_search and self.replication_method == REPLICATION_INCREMENTAL
+        return False
 
     @property
     def authenticator(self) -> BearerTokenAuthenticator:
