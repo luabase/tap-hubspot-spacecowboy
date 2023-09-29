@@ -76,7 +76,7 @@ class HubSpotStream(RESTStream):
         """
         yes_search = not self.config.get("no_search", False)
         # return yes_search and self.replication_method == REPLICATION_INCREMENTAL
-        return False
+        return False # False for now, hubspot api seems to return unsorted results on rare occasions
 
     @property
     def authenticator(self) -> BearerTokenAuthenticator:
