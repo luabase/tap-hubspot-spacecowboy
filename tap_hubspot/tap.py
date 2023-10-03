@@ -106,7 +106,7 @@ class TapHubSpot(Tap):
                     th.ObjectType(
                         th.Property("root", th.StringType, required=False),
                         th.Property(
-                            "prefix", th.StringType, required=False, default=""
+                            "prefix", th.StringType, required=False,
                         ),
                     ),
                     required=False,
