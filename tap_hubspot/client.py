@@ -93,6 +93,10 @@ class HubSpotStream(RESTStream):
         # headers["Private-Token"] = self.config.get("auth_token")
         return headers
 
+    def backoff_max_tries(self) -> int:
+        """Override this property to set the maximum number of backoff attempts."""
+        return 20
+
     def get_new_paginator(self) -> BaseAPIPaginator:
         """Get a fresh paginator for this API endpoint.
 
