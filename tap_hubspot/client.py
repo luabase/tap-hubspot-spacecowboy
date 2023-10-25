@@ -127,6 +127,10 @@ class HubSpotStream(RESTStream):
                 # Record filtered out during post_process()
                 continue
             yield transformed_record
+    
+    def backoff_max_tries(self) -> int:
+        """Override this property to set the maximum number of backoff attempts."""
+        return 20
 
     def get_new_paginator(self) -> BaseAPIPaginator:
         """Get a fresh paginator for this API endpoint.
