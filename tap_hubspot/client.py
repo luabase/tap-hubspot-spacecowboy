@@ -75,8 +75,18 @@ class HubSpotStream(RESTStream):
             `True` if stream is sorted. Defaults to `False`.
         """
         yes_search = not self.config.get("no_search", False)
-        # return yes_search and self.replication_method == REPLICATION_INCREMENTAL
-        return False # False for now, hubspot api seems to return unsorted results on rare occasions
+        return yes_search and self.replication_method == REPLICATION_INCREMENTAL
+        # return False # False for now, hubspot api seems to return unsorted results on rare occasions
+
+    @property
+    def check_sorted(self) -> bool:
+        """
+        Don't validate if stream is sorted. Hubspot occasionally returns unsorted results even though we do
+        ask it to sort, probably during pagination step. We do ensure that results within a response chunk are sorted
+        in get_records. Probably not a huge issue to ignore this check, observed unsorted results are only a few seconds apart.
+        TODO: check if there's a way to force hubspot to sort results.
+        """
+        return False
 
     @property
     def authenticator(self) -> BearerTokenAuthenticator:
@@ -93,6 +103,30 @@ class HubSpotStream(RESTStream):
         # If not using an authenticator, you may also provide inline auth headers:
         # headers["Private-Token"] = self.config.get("auth_token")
         return headers
+
+    def get_records(self, context) -> Iterable[dict[str, Any]]:
+        """Return a generator of record-type dictionary objects.
+
+        Each record emitted should be a dictionary of property names to their values.
+
+        Args:
+            context: Stream partition or context dictionary.
+
+        Yields:
+            One item per (possibly processed) record in the API.
+        """
+        records = self.request_records(context)
+        if self.replication_key:
+            # sort records within an response chunk
+            records = sorted(
+                records, key=lambda x: x["properties"][self.replication_key]
+            )
+        for record in records:
+            transformed_record = self.post_process(record, context)
+            if transformed_record is None:
+                # Record filtered out during post_process()
+                continue
+            yield transformed_record
 
     def get_new_paginator(self) -> BaseAPIPaginator:
         """Get a fresh paginator for this API endpoint.
