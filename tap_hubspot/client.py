@@ -127,6 +127,8 @@ class HubSpotStream(RESTStream):
                 # Record filtered out during post_process()
                 continue
             yield transformed_record
+        # deallocate records
+        record, records = None, None
     
     def backoff_max_tries(self) -> int:
         """Override this property to set the maximum number of backoff attempts."""
