@@ -1,5 +1,5 @@
 """REST client handling, including HubSpotStream base class."""
-
+import re
 import gzip
 import json
 import logging
@@ -164,6 +164,8 @@ class HubSpotStream(RESTStream):
         }
         props_to_get = self.get_properties()
         if props_to_get:
+            # filter out properties like hs_date_entered_121383958, hs_date_exited_25023851
+            props_to_get = [s for s in props_to_get if not re.search(r".*_[0-9]{4,}$", s)]
             params["properties"] = props_to_get
         if next_page_token:
             params["after"] = next_page_token
@@ -233,7 +235,6 @@ class HubSpotStream(RESTStream):
                     ]
                 }
             ]
-
         return body
 
     def get_appropriate_replication_key_value(
