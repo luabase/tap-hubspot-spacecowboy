@@ -23,7 +23,7 @@ class ContactsStream(HubSpotStream):
             ),
             th.Property(
                 "properties",
-                th.StringType,
+                th.ObjectType(),
             ),
             th.Property(
                 "createdAt",
@@ -43,7 +43,7 @@ class ContactsStream(HubSpotStream):
             ),
             th.Property(
                 "associations",
-                th.StringType,
+                th.ObjectType(),
             ),
         )
 
@@ -95,3 +95,9 @@ class ContactsStream(HubSpotStream):
     def path(self, _):
         "Just to shut Lint up"
         pass
+
+    # def get_child_context(self, record: dict, context: Optional[dict]) -> dict:
+    #     """Return a context dictionary for child streams."""
+    #     return {
+    #         "id": record["id"],
+    #     }

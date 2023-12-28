@@ -28,6 +28,7 @@ from tap_hubspot.streams.tasks import TasksStream
 from tap_hubspot.streams.tickets import TicketsStream
 from tap_hubspot.streams.tickets_associations import TicketsAssociationsStream
 from tap_hubspot.streams.tickets_pipelines import TicketsPipelinesStream
+from tap_hubspot.streams.email_associations import EmailAssociationsStream
 
 STREAM_TYPES = [
     CompaniesStream,
@@ -50,6 +51,7 @@ STREAM_TYPES = [
     ContactAssociationsStream,
     TaskAssociationsStream,
     TicketsAssociationsStream,
+    EmailAssociationsStream,
 ]
 
 
@@ -94,20 +96,20 @@ class TapHubSpot(Tap):
                 th.Property(
                     "encoding",
                     th.ObjectType(
-                        th.Property("format", th.StringType, required=True),
-                        th.Property("compression", th.StringType, required=True),
+                        th.Property("format", th.StringType, required=False),
+                        th.Property("compression", th.StringType, required=False),
                     ),
-                    required=True,
+                    required=False,
                 ),
                 th.Property(
                     "storage",
                     th.ObjectType(
-                        th.Property("root", th.StringType, required=True),
+                        th.Property("root", th.StringType, required=False),
                         th.Property(
-                            "prefix", th.StringType, required=False, default=""
+                            "prefix", th.StringType, required=False,
                         ),
                     ),
-                    required=True,
+                    required=False,
                 ),
             ),
             required=False,

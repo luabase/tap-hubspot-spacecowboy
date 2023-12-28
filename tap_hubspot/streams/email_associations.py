@@ -1,12 +1,12 @@
 from singer_sdk import typing as th  # JSON Schema typing helpers
 
 from tap_hubspot.client import HubSpotStream
-from tap_hubspot.streams.deals import DealsStream
+from tap_hubspot.streams.emails import EmailsStream
 
 
-class DealsAssociationsStream(HubSpotStream):
-    """Deal's associations"""
-    # parent_stream_type = DealsStream
+class EmailAssociationsStream(HubSpotStream):
+    """Email's associations."""
+    # parent_stream_type = EmailsStream
     # records_jsonpath = "$[*]"
 
     def get_properties(self):
@@ -14,13 +14,13 @@ class DealsAssociationsStream(HubSpotStream):
 
     request_limit = 50
 
-    name = "deals_associations"
+    name = "email_associations"
     path = (
-        # "/crm/v4/objects/deal/{id}/?associations=companies,contacts"
-        "/crm/v4/objects/deal/?associations=companies,contacts"
-        "&propertiesWithHistory=hubspot_owner_id,dealstage"
+        # "/crm/v4/objects/email/{id}/?associations=contacts"
+        "/crm/v4/objects/email/?associations=contacts"
+        "&propertiesWithHistory=hubspot_owner_id"
     )
-    properties_object_type = "deals"
+    properties_object_type = "emails"
     primary_keys = ["id"]
     replication_key = None
     schema = th.PropertiesList(

@@ -1,11 +1,12 @@
 """REST client handling, including HubSpotStream base class."""
-
+import re
 import gzip
 import json
 import logging
 from datetime import datetime
+from dateutil import parser
 from pathlib import Path
-from typing import IO, Any, Dict, Iterable, Optional
+from typing import IO, Any, Dict, Iterable, Optional, Union
 from uuid import uuid4
 
 import requests
@@ -14,6 +15,7 @@ from requests import Response
 from singer_sdk.authenticators import BearerTokenAuthenticator
 from singer_sdk.helpers._batch import BaseBatchFileEncoding, BatchConfig
 from singer_sdk.helpers.jsonpath import extract_jsonpath
+from singer_sdk.helpers._state import increment_state
 from singer_sdk.pagination import BaseAPIPaginator
 from singer_sdk.streams import RESTStream
 from singer_sdk.streams.core import REPLICATION_INCREMENTAL
@@ -97,6 +99,64 @@ class HubSpotStream(RESTStream):
         """Override this property to set the maximum number of backoff attempts."""
         return 20
 
+    def _increment_stream_state(
+        self,
+        latest_record: dict[str, Any],
+        *,
+        context: Union[dict, None] = None,
+    ) -> None:
+        """Update state of stream or partition with data from the provided record.
+
+        Raises `InvalidStreamSortException` is `self.is_sorted = True` and unsorted data
+        is detected.
+
+        Note: The default implementation does not advance any bookmarks unless
+        `self.replication_method == 'INCREMENTAL'.
+
+        Args:
+            latest_record: TODO
+            context: Stream partition or context dictionary.
+
+        Raises:
+            ValueError: TODO
+        """
+        # This also creates a state entry if one does not yet exist:
+        state_dict = self.get_context_state(context)
+
+        # Advance state bookmark values if applicable
+        if latest_record and self.replication_method == REPLICATION_INCREMENTAL:
+            if not self.replication_key:
+                msg = (
+                    f"Could not detect replication key for '{self.name}' "
+                    f"stream(replication method={self.replication_method})"
+                )
+                raise ValueError(msg)
+            treat_as_sorted = self.is_sorted
+            if not treat_as_sorted and self.state_partitioning_keys is not None:
+                # Streams with custom state partitioning are not resumable.
+                treat_as_sorted = False
+
+            old_replication_key_value = state_dict.get("replication_key_value", None)
+            if old_replication_key_value:
+                """ 
+                truncate states to minute, hubspot api occasionally returns records out of order by a few seconds
+                despite sorting in the request. This is a workaround to compare state timestamps at the minute level
+                to avoid the InvalidStreamSortException
+                """
+                old_replication_key_value = parser.parse(old_replication_key_value).strftime("%Y-%m-%d %H:%M")
+                latest_replication_key_value = latest_record[self.replication_key].strftime("%Y-%m-%d %H:%M")
+
+                state_dict["replication_key_value"] = old_replication_key_value
+                latest_record[self.replication_key] = latest_replication_key_value
+
+            increment_state(
+                state_dict,
+                replication_key=self.replication_key,
+                latest_record=latest_record,
+                is_sorted=treat_as_sorted,
+                check_sorted=self.check_sorted,
+            )
+
     def get_new_paginator(self) -> BaseAPIPaginator:
         """Get a fresh paginator for this API endpoint.
 
@@ -127,6 +187,10 @@ class HubSpotStream(RESTStream):
         }
         props_to_get = self.get_properties()
         if props_to_get:
+            # filter out properties like hs_date_entered_121383958, hs_date_exited_25023851
+            props_to_get = [
+                s for s in props_to_get if not re.search(r".*_[0-9]{4,}$", s)
+            ]
             params["properties"] = props_to_get
         if next_page_token:
             params["after"] = next_page_token
@@ -196,7 +260,6 @@ class HubSpotStream(RESTStream):
                     ]
                 }
             ]
-
         return body
 
     def get_appropriate_replication_key_value(
@@ -282,13 +345,6 @@ class HubSpotStream(RESTStream):
         # Need to copy the replication key to top level so that meltano can read it
         if self.replication_key:
             row[self.replication_key] = self.get_replication_key_value(row)
-        # Convert properties and associations back into JSON
-        if "properties" in row:
-            jsonprops = json.dumps(row.get("properties"))
-            row["properties"] = jsonprops
-        if "associations" in row:
-            jsonassoc = json.dumps(row.get("associations"))
-            row["associations"] = jsonassoc
         return row
 
     def get_replication_key_value(self, row: dict) -> Optional[datetime]:
