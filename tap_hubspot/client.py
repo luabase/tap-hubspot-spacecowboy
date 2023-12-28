@@ -4,8 +4,9 @@ import gzip
 import json
 import logging
 from datetime import datetime
+from dateutil import parser
 from pathlib import Path
-from typing import IO, Any, Dict, Iterable, Optional
+from typing import IO, Any, Dict, Iterable, Optional, Union
 from uuid import uuid4
 
 import requests
@@ -14,6 +15,7 @@ from requests import Response
 from singer_sdk.authenticators import BearerTokenAuthenticator
 from singer_sdk.helpers._batch import BaseBatchFileEncoding, BatchConfig
 from singer_sdk.helpers.jsonpath import extract_jsonpath
+from singer_sdk.helpers._state import increment_state
 from singer_sdk.pagination import BaseAPIPaginator
 from singer_sdk.streams import RESTStream
 from singer_sdk.streams.core import REPLICATION_INCREMENTAL
@@ -76,17 +78,6 @@ class HubSpotStream(RESTStream):
         """
         yes_search = not self.config.get("no_search", False)
         return yes_search and self.replication_method == REPLICATION_INCREMENTAL
-        # return False # False for now, hubspot api seems to return unsorted results on rare occasions
-
-    @property
-    def check_sorted(self) -> bool:
-        """
-        Don't validate if stream is sorted. Hubspot occasionally returns unsorted results even though we do
-        ask it to sort, probably during pagination step. We do ensure that results within a response chunk are sorted
-        in get_records. Probably not a huge issue to ignore this check, observed unsorted results are only a few seconds apart.
-        TODO: check if there's a way to force hubspot to sort results.
-        """
-        return False
 
     @property
     def authenticator(self) -> BearerTokenAuthenticator:
@@ -104,35 +95,63 @@ class HubSpotStream(RESTStream):
         # headers["Private-Token"] = self.config.get("auth_token")
         return headers
 
-    def get_records(self, context) -> Iterable[dict[str, Any]]:
-        """Return a generator of record-type dictionary objects.
-
-        Each record emitted should be a dictionary of property names to their values.
-
-        Args:
-            context: Stream partition or context dictionary.
-
-        Yields:
-            One item per (possibly processed) record in the API.
-        """
-        records = self.request_records(context)
-        if self.replication_key:
-            # sort records within an response chunk
-            records = sorted(
-                records, key=lambda x: x["properties"][self.replication_key]
-            )
-        for record in records:
-            transformed_record = self.post_process(record, context)
-            if transformed_record is None:
-                # Record filtered out during post_process()
-                continue
-            yield transformed_record
-        # deallocate records
-        record, records = None, None
-    
     def backoff_max_tries(self) -> int:
         """Override this property to set the maximum number of backoff attempts."""
         return 20
+
+    def _increment_stream_state(
+        self,
+        latest_record: dict[str, Any],
+        *,
+        context: Union[dict, None] = None,
+    ) -> None:
+        """Update state of stream or partition with data from the provided record.
+
+        Raises `InvalidStreamSortException` is `self.is_sorted = True` and unsorted data
+        is detected.
+
+        Note: The default implementation does not advance any bookmarks unless
+        `self.replication_method == 'INCREMENTAL'.
+
+        Args:
+            latest_record: TODO
+            context: Stream partition or context dictionary.
+
+        Raises:
+            ValueError: TODO
+        """
+        # This also creates a state entry if one does not yet exist:
+        state_dict = self.get_context_state(context)
+
+        # Advance state bookmark values if applicable
+        if latest_record and self.replication_method == REPLICATION_INCREMENTAL:
+            if not self.replication_key:
+                msg = (
+                    f"Could not detect replication key for '{self.name}' "
+                    f"stream(replication method={self.replication_method})"
+                )
+                raise ValueError(msg)
+            treat_as_sorted = self.is_sorted
+            if not treat_as_sorted and self.state_partitioning_keys is not None:
+                # Streams with custom state partitioning are not resumable.
+                treat_as_sorted = False
+
+            old_replication_key_value = state_dict.get("replication_key_value", None)
+            if old_replication_key_value:
+                # truncate states to minute
+                old_replication_key_value = parser.parse(old_replication_key_value).strftime("%Y-%m-%d %H:%M")
+                latest_replication_key_value = latest_record[self.replication_key].strftime("%Y-%m-%d %H:%M")
+
+                state_dict["replication_key_value"] = old_replication_key_value
+                latest_record[self.replication_key] = latest_replication_key_value
+                
+            increment_state(
+                state_dict,
+                replication_key=self.replication_key,
+                latest_record=latest_record,
+                is_sorted=treat_as_sorted,
+                check_sorted=self.check_sorted,
+            )
 
     def get_new_paginator(self) -> BaseAPIPaginator:
         """Get a fresh paginator for this API endpoint.
@@ -165,7 +184,9 @@ class HubSpotStream(RESTStream):
         props_to_get = self.get_properties()
         if props_to_get:
             # filter out properties like hs_date_entered_121383958, hs_date_exited_25023851
-            props_to_get = [s for s in props_to_get if not re.search(r".*_[0-9]{4,}$", s)]
+            props_to_get = [
+                s for s in props_to_get if not re.search(r".*_[0-9]{4,}$", s)
+            ]
             params["properties"] = props_to_get
         if next_page_token:
             params["after"] = next_page_token
