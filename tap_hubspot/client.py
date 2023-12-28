@@ -138,13 +138,17 @@ class HubSpotStream(RESTStream):
 
             old_replication_key_value = state_dict.get("replication_key_value", None)
             if old_replication_key_value:
-                # truncate states to minute
+                """ 
+                truncate states to minute, hubspot api occasionally returns records out of order by a few seconds
+                despite sorting in the request. This is a workaround to compare state timestamps at the minute level
+                to avoid the InvalidStreamSortException
+                """
                 old_replication_key_value = parser.parse(old_replication_key_value).strftime("%Y-%m-%d %H:%M")
                 latest_replication_key_value = latest_record[self.replication_key].strftime("%Y-%m-%d %H:%M")
 
                 state_dict["replication_key_value"] = old_replication_key_value
                 latest_record[self.replication_key] = latest_replication_key_value
-                
+
             increment_state(
                 state_dict,
                 replication_key=self.replication_key,
