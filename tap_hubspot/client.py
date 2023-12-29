@@ -4,7 +4,6 @@ import gzip
 import json
 import logging
 from datetime import datetime
-from dateutil import parser
 from pathlib import Path
 from typing import IO, Any, Dict, Iterable, Optional, Union
 from uuid import uuid4
@@ -15,10 +14,10 @@ from requests import Response
 from singer_sdk.authenticators import BearerTokenAuthenticator
 from singer_sdk.helpers._batch import BaseBatchFileEncoding, BatchConfig
 from singer_sdk.helpers.jsonpath import extract_jsonpath
-from singer_sdk.helpers._state import increment_state
 from singer_sdk.pagination import BaseAPIPaginator
 from singer_sdk.streams import RESTStream
 from singer_sdk.streams.core import REPLICATION_INCREMENTAL
+from tap_hubspot.helpers import increment_state
 
 SCHEMAS_DIR = Path(__file__).parent / Path("./schemas")
 
@@ -135,19 +134,6 @@ class HubSpotStream(RESTStream):
             if not treat_as_sorted and self.state_partitioning_keys is not None:
                 # Streams with custom state partitioning are not resumable.
                 treat_as_sorted = False
-
-            old_replication_key_value = state_dict.get("replication_key_value", None)
-            if old_replication_key_value:
-                """ 
-                truncate states to minute, hubspot api occasionally returns records out of order by a few seconds
-                despite sorting in the request. This is a workaround to compare state timestamps at the minute level
-                to avoid the InvalidStreamSortException
-                """
-                old_replication_key_value = parser.parse(old_replication_key_value).strftime("%Y-%m-%d %H:%M")
-                latest_replication_key_value = latest_record[self.replication_key].strftime("%Y-%m-%d %H:%M")
-
-                state_dict["replication_key_value"] = old_replication_key_value
-                latest_record[self.replication_key] = latest_replication_key_value
 
             increment_state(
                 state_dict,
