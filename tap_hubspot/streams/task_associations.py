@@ -17,7 +17,7 @@ class TaskAssociationsStream(HubSpotStream):
     name = "task_associations"
     path = (
         # "/crm/v4/objects/task/{id}/?associations=contacts"
-        "/crm/v4/objects/task/?associations=contacts,deals"
+        "/crm/v4/objects/task/?associations=contacts,deals,companies,tickets"
         "&propertiesWithHistory=hubspot_owner_id"
     )
     properties_object_type = "task"
