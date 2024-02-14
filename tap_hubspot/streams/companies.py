@@ -9,7 +9,8 @@ class CompaniesStream(HubSpotStream):
     """Companies."""
 
     name = "companies"
-    search_path = "/crm/v3/objects/companies/search"
+    # search_path = "/crm/v3/objects/companies/search"
+    search_path = "/crm/v3/objects/companies"
     full_path = "/crm/v3/objects/companies"
     properties_object_type = "companies"
     primary_keys = ["id"]
@@ -59,7 +60,8 @@ class CompaniesStream(HubSpotStream):
 
     @property
     def replication_key(self) -> Optional[str]:
-        return None if self.config.get("no_search", False) else "hs_lastmodifieddate"
+        return None
+        # return None if self.config.get("no_search", False) else "hs_lastmodifieddate"
 
     @replication_key.setter
     def replication_key(self, _):
