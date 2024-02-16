@@ -55,6 +55,13 @@ class CompaniesStream(HubSpotStream):
                     th.DateTimeType,
                 )
             )
+        else:
+            props.append(
+                th.Property(
+                    "hs_lastmodifieddate",
+                    th.DateTimeType,
+                )
+            )
 
         return props.to_dict()
 
