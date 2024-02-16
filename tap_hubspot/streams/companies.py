@@ -79,6 +79,15 @@ class CompaniesStream(HubSpotStream):
         "Just to shut Lint up"
         pass
 
+    def post_process(self, row: dict, context: Optional[dict] = None) -> Optional[dict]:
+        """As needed, append or transform raw data to match expected structure."""
+        # Need to copy the replication key to top level so that meltano can read it
+        if self.replication_key:
+            row[self.replication_key] = self.get_replication_key_value(row)
+        else:
+            row["hs_lastmodifieddate"] = row['updatedAt']
+        return row
+
     # def get_child_context(self, record: dict, context: Optional[dict]) -> dict:
     #     """Return a context dictionary for child streams."""
     #     return {
