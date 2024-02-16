@@ -3,6 +3,7 @@ from typing import Optional
 from singer_sdk import typing as th  # JSON Schema typing helpers
 
 from tap_hubspot.client import HubSpotStream
+import logging
 
 
 class CompaniesStream(HubSpotStream):
@@ -55,6 +56,13 @@ class CompaniesStream(HubSpotStream):
                     th.DateTimeType,
                 )
             )
+        else:
+            props.append(
+                th.Property(
+                    "hs_lastmodifieddate",
+                    th.DateTimeType,
+                )
+            )
 
         return props.to_dict()
 
@@ -86,6 +94,7 @@ class CompaniesStream(HubSpotStream):
             row[self.replication_key] = self.get_replication_key_value(row)
         else:
             row["hs_lastmodifieddate"] = row['updatedAt']
+        # logging.info(f"Post processing row: {row}")
         return row
 
     # def get_child_context(self, record: dict, context: Optional[dict]) -> dict:
