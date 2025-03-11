@@ -43,4 +43,8 @@ class TicketsAssociationsStream(HubSpotStream):
             "propertiesWithHistory",
             th.ObjectType(),
         ),
+        th.Property(
+            "properties",
+            th.ObjectType(),
+        ),
     ).to_dict()
