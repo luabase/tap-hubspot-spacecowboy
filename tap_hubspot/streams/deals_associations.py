@@ -44,4 +44,8 @@ class DealsAssociationsStream(HubSpotStream):
             "propertiesWithHistory",
             th.ObjectType(),
         ),
+        th.Property(
+            "properties",
+            th.ObjectType(),
+        ),
     ).to_dict()
