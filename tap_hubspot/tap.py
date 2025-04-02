@@ -1,7 +1,8 @@
 """HubSpot tap class."""
 
 from typing import List
-
+import logging
+import requests
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
 from singer_sdk.helpers._classproperty import classproperty
@@ -106,7 +107,9 @@ class TapHubSpot(Tap):
                     th.ObjectType(
                         th.Property("root", th.StringType, required=False),
                         th.Property(
-                            "prefix", th.StringType, required=False,
+                            "prefix",
+                            th.StringType,
+                            required=False,
                         ),
                     ),
                     required=False,
@@ -116,9 +119,40 @@ class TapHubSpot(Tap):
         ),
     ).to_dict()
 
+    def test_stream_access(self, stream: Stream) -> bool:
+        """Test if stream is accessible with API scopes.
+
+        Args:
+            stream (Stream): The stream to test.
+        """
+        stream_path = stream.full_path if hasattr(stream, "full_path") else stream.path
+        url = stream.url_base + stream_path
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.config['hapikey']}",
+        }
+        response = requests.get(url, headers=headers)
+        return response.status_code == 200
+
     def discover_streams(self) -> List[Stream]:
         """Return a list of discovered streams."""
-        return [stream_class(tap=self) for stream_class in STREAM_TYPES]
+        accessible_streams = []
+        for stream_class in STREAM_TYPES:
+            if self.test_stream_access(stream_class):
+                logging.info(f"Stream {stream_class.name} is accessible")
+                accessible_streams.append(stream_class(tap=self))
+            else:
+                logging.warning(
+                    f"Stream {stream_class.name} is not accessible, skipping..."
+                )
+        if len(accessible_streams) == 0:
+            raise Exception(
+                "No accessible streams found, please check your API key and scopes."
+            )
+        logging.info(
+            f"Discovered {len(accessible_streams)} accessible streams. Streams: {', '.join([stream.name for stream in accessible_streams])}"
+        )
+        return accessible_streams
 
     @classproperty
     def capabilities(self) -> List[CapabilitiesEnum]:
