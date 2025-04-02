@@ -78,6 +78,22 @@ class HubSpotStream(RESTStream):
         yes_search = not self.config.get("no_search", False)
         return yes_search and self.replication_method == REPLICATION_INCREMENTAL
 
+    # Override this property to disable sorting checks, Hubspot API sometimes returns unsorted data. Open issue here:
+    # https://community.hubspot.com/t5/APIs-Integrations/Search-API-ascending-sort-does-not-work-descending-does/m-p/922945
+    # This is a workaround to avoid the issue, but risks skipping records.
+    # This solution is implemented in the original tap-hubspot repo here: https://github.com/YouCruit/tap-hubspot/pull/24
+    @property
+    def check_sorted(self) -> bool:
+        """Check if stream is sorted.
+
+        This setting enables additional checks which may trigger
+        `InvalidStreamSortException` if records are found which are unsorted.
+
+        Returns:
+            `True` if sorting is checked. Defaults to `True`.
+        """
+        return False
+
     @property
     def authenticator(self) -> BearerTokenAuthenticator:
         """Return a new authenticator object."""
