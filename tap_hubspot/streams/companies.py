@@ -9,8 +9,8 @@ class CompaniesStream(HubSpotStream):
     """Companies."""
 
     name = "companies"
-    # search_path = "/crm/v3/objects/companies/search"
-    search_path = "/crm/v3/objects/companies"
+    search_path = "/crm/v3/objects/companies/search"
+    # search_path = "/crm/v3/objects/companies"
     full_path = "/crm/v3/objects/companies"
     properties_object_type = "companies"
     primary_keys = ["id"]
