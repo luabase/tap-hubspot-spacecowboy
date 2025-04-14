@@ -262,7 +262,7 @@ class HubSpotStream(RESTStream):
                     ]
                 }
             ]
-        self.logger.info(f"Request Payload: {body}")
+        # self.logger.info(f"Request Payload: {body}")
         return body
 
     def get_appropriate_replication_key_value(
