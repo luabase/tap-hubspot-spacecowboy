@@ -12,6 +12,7 @@ from singer_sdk.helpers.capabilities import (
     TapCapabilities,
 )
 
+from tap_hubspot.streams.archived_companies import ArchivedCompaniesStream
 from tap_hubspot.streams.calls import CallsStream
 from tap_hubspot.streams.companies import CompaniesStream
 from tap_hubspot.streams.company_associations import CompanyAssociationsStream
@@ -32,6 +33,7 @@ from tap_hubspot.streams.tickets_pipelines import TicketsPipelinesStream
 from tap_hubspot.streams.email_associations import EmailAssociationsStream
 
 STREAM_TYPES = [
+    ArchivedCompaniesStream,
     CompaniesStream,
     ContactsStream,
     DealsStream,
