@@ -95,6 +95,18 @@ class HubSpotStream(RESTStream):
         return False
 
     @property
+    def check_sorted(self) -> bool:
+        """Check if stream is sorted.
+
+        This setting enables additional checks which may trigger
+        `InvalidStreamSortException` if records are found which are unsorted.
+
+        Returns:
+            `True` if sorting is checked. Defaults to `True`.
+        """
+        return False
+
+    @property
     def authenticator(self) -> BearerTokenAuthenticator:
         """Return a new authenticator object."""
         token: str = self.config["hapikey"]
