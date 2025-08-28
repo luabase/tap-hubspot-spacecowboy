@@ -18,7 +18,7 @@ class ContactAssociationsStream(HubSpotStream):
     name = "contact_associations"
     path = (
         # "/crm/v4/objects/contact/{id}/?associations=companies,deals"
-        "/crm/v4/objects/contact/?associations=companies,deals"
+        "/crm/v4/objects/contact/?associations=companies,deals,meetings"
         "&propertiesWithHistory=hubspot_owner_id"
     )
     properties_object_type = "contacts"
