@@ -16,8 +16,12 @@ class ArchivedCompaniesStream(HubSpotStream):
     def get_url_params(
         self, context: Optional[dict], next_page_token: Optional[Any]
     ) -> Dict[str, Any]:
-        params = super().get_url_params(context, next_page_token)
-        params["archived"] = True
+        params = {
+            "archived": True,
+            "limit": 100,
+        }
+        if next_page_token:
+            params["after"] = next_page_token
         return params
 
     @property
@@ -72,7 +76,7 @@ class ArchivedCompaniesStream(HubSpotStream):
 
     @property
     def replication_key(self) -> Optional[str]:
-        # for full table replication, we don't need a replication key
+        # incremental replication is not supported for archived companies
         return None
 
     @replication_key.setter
