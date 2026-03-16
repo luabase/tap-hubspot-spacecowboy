@@ -192,7 +192,6 @@ class HubSpotStream(RESTStream):
         if next_page_token:
             params["after"] = next_page_token
 
-        self.logger.debug(f"UrlParams after: {next_page_token}")
         return params
 
     def prepare_request_payload(
@@ -257,7 +256,6 @@ class HubSpotStream(RESTStream):
                     ]
                 }
             ]
-        # self.logger.info(f"Request Payload: {body}")
         return body
 
     def get_appropriate_replication_key_value(
